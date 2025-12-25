@@ -1,6 +1,9 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import { prisma } from '../utils/db';
-import { CSV_FILE_PATH, SYMBOL_DB } from '../utils/config';
+import { CSV_FILE_PATH, SYMBOL_DB, US_YIELD_FILE_PATH, RAW_DATA_DIR } from '../utils/config';
+
+// ETF Paths - REMOVED
 
 /**
  * 解析日期字符串
@@ -16,17 +19,15 @@ function parseDate(dateStr: string): Date | null {
     }
 }
 
-async function main() {
+async function importExchangeRates() {
     if (!fs.existsSync(CSV_FILE_PATH)) {
-        console.error('找不到 CSV 文件:', CSV_FILE_PATH);
+        console.error('找不到 Exchange Rate CSV 文件:', CSV_FILE_PATH);
         return;
     }
 
-    console.log('开始读取 CSV 文件...');
+    console.log('开始读取 Exchange Rate CSV 文件...');
     const csvContent = fs.readFileSync(CSV_FILE_PATH, 'utf-8');
     const lines = csvContent.split('\n');
-    // Header: date,open,high,low,close,adjClose,volume
-    // 这里的顺序必须与 fetch_data.ts 保持一致
     const dataLines = lines.slice(1).filter(line => line.trim() !== '');
 
     console.log(`找到 ${dataLines.length} 条数据，准备导入...`);
@@ -36,14 +37,11 @@ async function main() {
     let skipCount = 0;
 
     for (const line of dataLines) {
-        // CSV line parsing
         const parts = line.split(',');
         if (parts.length >= 5) {
-            // date,open,high,low,close,adjClose,volume
             const [rawDate, open, high, low, close] = parts;
             const date = parseDate(rawDate);
             
-            // 确保所有数值都是有效的数字
             const openVal = parseFloat(open);
             const highVal = parseFloat(high);
             const lowVal = parseFloat(low);
@@ -67,8 +65,7 @@ async function main() {
     console.log(`解析完成: 有效记录 ${records.length} 条，跳过 ${skipCount} 条。`);
 
     if (records.length > 0) {
-        console.log('正在写入数据库...');
-        // SQLite 不支持 createMany 的 skipDuplicates，改用 transaction + upsert
+        console.log('正在写入数据库 (Exchange Rates)...');
         for (let i = 0; i < records.length; i += batchSize) {
             const batch = records.slice(i, i + batchSize);
             const operations = batch.map(record => {
@@ -101,11 +98,88 @@ async function main() {
             await prisma.$transaction(operations);
             process.stdout.write(`\r已处理: ${Math.min(i + batchSize, records.length)} / ${records.length}`);
         }
-        console.log('\n导入完成。');
+        console.log('\nExchange Rates 导入完成。');
+    }
+}
+
+async function importBondYields(filePath: string, symbol: string) {
+    if (!fs.existsSync(filePath)) {
+        console.error(`找不到 Bond Yield CSV 文件: ${filePath}`);
+        return;
     }
 
-    const count = await prisma.exchangeRate.count();
-    console.log(`数据库当前总记录数: ${count}`);
+    console.log(`开始读取 Bond Yield CSV 文件 (${symbol})...`);
+    const csvContent = fs.readFileSync(filePath, 'utf-8');
+    const lines = csvContent.split('\n');
+    const dataLines = lines.slice(1).filter(line => line.trim() !== '');
+
+    console.log(`找到 ${dataLines.length} 条数据，准备导入...`);
+
+    const batchSize = 500;
+    const records = [];
+    let skipCount = 0;
+
+    for (const line of dataLines) {
+        const parts = line.split(',');
+        if (parts.length >= 2) {
+            // date,value
+            const [rawDate, value] = parts;
+            const date = parseDate(rawDate);
+            const val = parseFloat(value);
+
+            if (date && !isNaN(val)) {
+                records.push({
+                    symbol: symbol,
+                    date: date,
+                    value: val
+                });
+            } else {
+                skipCount++;
+            }
+        }
+    }
+
+    console.log(`解析完成: 有效记录 ${records.length} 条，跳过 ${skipCount} 条。`);
+
+    if (records.length > 0) {
+        console.log(`正在写入数据库 (${symbol})...`);
+        for (let i = 0; i < records.length; i += batchSize) {
+            const batch = records.slice(i, i + batchSize);
+            const operations = batch.map(record => {
+                const { symbol, date, value } = record;
+                
+                return prisma.bondYield.upsert({
+                    where: {
+                        symbol_date: {
+                            symbol,
+                            date
+                        }
+                    },
+                    update: {
+                        value
+                    },
+                    create: {
+                        symbol,
+                        date,
+                        value
+                    },
+                });
+            });
+            
+            await prisma.$transaction(operations);
+            process.stdout.write(`\r已处理: ${Math.min(i + batchSize, records.length)} / ${records.length}`);
+        }
+        console.log(`\n${symbol} 导入完成。`);
+    }
+}
+
+async function main() {
+    await importExchangeRates();
+    await importBondYields(US_YIELD_FILE_PATH, 'US10Y');
+
+    const rateCount = await prisma.exchangeRate.count();
+    const bondCount = await prisma.bondYield.count();
+    console.log(`数据库当前状态: Exchange Rates: ${rateCount}, Bond Yields: ${bondCount}`);
 }
 
 main()

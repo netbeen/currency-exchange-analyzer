@@ -16,6 +16,8 @@ export const DATA_DIR = path.join(PROJECT_ROOT, 'data');
 export const RAW_DATA_DIR = path.join(DATA_DIR, 'raw');
 export const CSV_FILENAME = 'usd_cny_history_2001_2025.csv';
 export const CSV_FILE_PATH = path.join(RAW_DATA_DIR, CSV_FILENAME);
+export const US_YIELD_FILENAME = 'us_10y_yield_history.csv';
+export const US_YIELD_FILE_PATH = path.join(RAW_DATA_DIR, US_YIELD_FILENAME);
 
 // 公共目录（Web 可视化）
 export const PUBLIC_DIR = path.join(PROJECT_ROOT, 'public');

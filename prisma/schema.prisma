@@ -25,3 +25,16 @@ model ExchangeRate {
   @@unique([symbol, date])
   @@map("exchange_rates")
 }
+
+model BondYield {
+  id        Int      @id @default(autoincrement())
+  symbol    String   // 例如 "US10Y", "CN10Y"
+  date      DateTime // 交易日期
+  value     Float    // 收益率值 (%)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 复合唯一索引：确保同一债券在同一天只有一条记录
+  @@unique([symbol, date])
+  @@map("bond_yields")
+}
