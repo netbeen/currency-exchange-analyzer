@@ -33,7 +33,7 @@ npm install
 ### 3. 配置环境
 项目根目录需要 `.env` 文件来配置数据库连接。如果没有，请创建并添加以下内容（项目已预设）：
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="file:./data/runtime/market_data.db"
 ```
 
 ### 4. 初始化数据库
@@ -81,10 +81,11 @@ npm run visualize
 ## 项目结构
 ```
 ├── data/
-│   └── raw/            # 原始 CSV 数据文件
+│   ├── raw/            # 原始 CSV 数据文件
+│   └── runtime/        # 运行时数据 (Git 忽略)
+│       └── market_data.db # SQLite 数据库
 ├── prisma/
-│   ├── schema.prisma   # 数据库模型定义
-│   └── dev.db          # SQLite 数据库文件 (自动生成)
+│   └── schema.prisma   # 数据库模型定义
 ├── src/
 │   ├── analysis/       # 技术指标算法实现
 │   │   └── technical_indicators.ts
