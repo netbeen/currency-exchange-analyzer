@@ -80,9 +80,14 @@ h1 {
     background-color: #2196F3;
     color: white;
 }
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
 .chart-container {
     position: relative;
     height: 500px;
     width: 100%;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
 }

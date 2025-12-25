@@ -24,7 +24,21 @@ async function main() {
             }
         });
 
-        console.log(`获取到 ${rates.length} 条记录`);
+        const us10y = await prisma.bondYield.findMany({
+            where: {
+                symbol: 'US10Y'
+            },
+            orderBy: {
+                date: 'asc'
+            },
+            select: {
+                date: true,
+                value: true
+            }
+        });
+
+        console.log(`获取到 ${rates.length} 条汇率记录`);
+        console.log(`获取到 ${us10y.length} 条 US10Y 记录`);
 
         if (rates.length === 0) {
             console.log('没有数据可分析');
@@ -33,6 +47,13 @@ async function main() {
 
         const closePrices = rates.map((r: { close: number }) => r.close);
         const dates = rates.map((r: { date: Date }) => r.date);
+
+        // Align US10Y data with Exchange Rate dates
+        const us10yMap = new Map(us10y.map(r => [r.date.toISOString().split('T')[0], r.value]));
+        const us10yAligned = dates.map(d => {
+            const dateStr = d.toISOString().split('T')[0];
+            return us10yMap.get(dateStr) || null;
+        });
 
         console.log('正在计算技术指标 (SMA, EMA, Bollinger Bands, MACD)...');
         
@@ -51,6 +72,7 @@ async function main() {
         const resultData = {
             dates: dates.map((d: Date) => d.toISOString().split('T')[0]),
             prices: closePrices,
+            us10y: us10yAligned,
             indicators: {
                 sma20,
                 ema20,

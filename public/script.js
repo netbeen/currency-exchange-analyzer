@@ -184,6 +184,7 @@ function syncHover(event, activeElements, chart) {
 
 function renderCharts(data) {
     const ctxPrice = document.getElementById('priceChart').getContext('2d');
+    const ctxUs10y = document.getElementById('us10yChart').getContext('2d');
     const ctxMacd = document.getElementById('macdChart').getContext('2d');
     
     // Common zoom options
@@ -304,7 +305,50 @@ function renderCharts(data) {
         }
     });
 
-    // MACD 图表
+    // US10Y Chart
+    const us10yChart = new Chart(ctxUs10y, {
+        type: 'line',
+        data: {
+            labels: data.dates,
+            datasets: [{
+                label: '美国 10 年期国债收益率 (%)',
+                data: data.us10y,
+                borderColor: '#9C27B0',
+                borderWidth: 2,
+                pointRadius: 0,
+                yAxisID: 'y'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            onHover: hoverOptions.onHover,
+            plugins: {
+                title: {
+                    display: true,
+                    text: '美国 10 年期国债收益率'
+                },
+                zoom: zoomOptions
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: '收益率 (%)'
+                    }
+                }
+            }
+        }
+    });
+
+    // MACD Chart
     const macdChart = new Chart(ctxMacd, {
         type: 'bar',
         data: {
@@ -315,7 +359,7 @@ function renderCharts(data) {
                     label: 'MACD Line',
                     data: data.indicators.macd.line,
                     borderColor: '#2196F3',
-                    borderWidth: 2,
+                    borderWidth: 1.5,
                     pointRadius: 0
                 },
                 {
@@ -323,17 +367,22 @@ function renderCharts(data) {
                     label: 'Signal Line',
                     data: data.indicators.macd.signal,
                     borderColor: '#FF5722',
-                    borderWidth: 2,
+                    borderWidth: 1.5,
                     pointRadius: 0
                 },
                 {
                     type: 'bar',
                     label: 'Histogram',
                     data: data.indicators.macd.histogram,
-                    backgroundColor: (context) => {
+                    backgroundColor: function(context) {
+                        const value = context.raw;
+                        return value >= 0 ? 'rgba(76, 175, 80, 0.5)' : 'rgba(244, 67, 54, 0.5)';
+                    },
+                    borderColor: function(context) {
                         const value = context.raw;
                         return value >= 0 ? '#4CAF50' : '#F44336';
-                    }
+                    },
+                    borderWidth: 1
                 }
             ]
         },
@@ -348,22 +397,25 @@ function renderCharts(data) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'MACD (12, 26, 9)'
+                    text: 'MACD 指标'
                 },
                 zoom: zoomOptions
             },
             scales: {
                 y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
                     title: {
                         display: true,
-                        text: '数值'
+                        text: '值'
                     }
                 }
             }
         }
     });
 
-    charts = [priceChart, macdChart];
+    charts = [priceChart, us10yChart, macdChart];
 }
 
 loadData();
