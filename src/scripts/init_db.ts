@@ -1,22 +1,6 @@
-import { PrismaClient } from '../generated/client/client';
-import { PrismaLibSql } from '@prisma/adapter-libsql';
 import * as fs from 'fs';
-import * as path from 'path';
-
-// 加载环境变量
-const envPath = path.resolve(__dirname, '../../.env');
-if (fs.existsSync(envPath)) {
-    require('dotenv').config({ path: envPath });
-}
-
-console.log('DATABASE_URL:', process.env.DATABASE_URL);
-
-const adapter = new PrismaLibSql({
-  url: process.env.DATABASE_URL!,
-});
-const prisma = new PrismaClient({ adapter });
-
-const CSV_PATH = path.join(__dirname, '../../data/raw/usd_cny_history_2001_2025.csv');
+import { prisma } from '../utils/db';
+import { CSV_FILE_PATH, SYMBOL_DB } from '../utils/config';
 
 /**
  * 解析日期字符串
@@ -24,10 +8,6 @@ const CSV_PATH = path.join(__dirname, '../../data/raw/usd_cny_history_2001_2025.
  */
 function parseDate(dateStr: string): Date | null {
     try {
-        // dateStr example: "Mon Jun 25 2001 07:00:00 GMT+0800 (China Standard Time)"
-        // or potentially simpler depending on the CSV parsing. 
-        // Based on previous `head` output: "Mon Jun 25 2001 07:00:00 GMT+0800 (China Standard Time)"
-        // This can be directly parsed by new Date() in Node.js
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) return null;
         return date;
@@ -37,13 +17,13 @@ function parseDate(dateStr: string): Date | null {
 }
 
 async function main() {
-    if (!fs.existsSync(CSV_PATH)) {
-        console.error('找不到 CSV 文件:', CSV_PATH);
+    if (!fs.existsSync(CSV_FILE_PATH)) {
+        console.error('找不到 CSV 文件:', CSV_FILE_PATH);
         return;
     }
 
     console.log('开始读取 CSV 文件...');
-    const csvContent = fs.readFileSync(CSV_PATH, 'utf-8');
+    const csvContent = fs.readFileSync(CSV_FILE_PATH, 'utf-8');
     const lines = csvContent.split('\n');
     // Header: date,open,high,low,close,adjClose,volume
     // 这里的顺序必须与 fetch_data.ts 保持一致
@@ -71,7 +51,7 @@ async function main() {
 
             if (date && !isNaN(openVal) && !isNaN(highVal) && !isNaN(lowVal) && !isNaN(closeVal)) {
                 records.push({
-                    symbol: 'USDCNY',
+                    symbol: SYMBOL_DB,
                     date: date,
                     open: openVal,
                     high: highVal,
@@ -92,16 +72,8 @@ async function main() {
         for (let i = 0; i < records.length; i += batchSize) {
             const batch = records.slice(i, i + batchSize);
             const operations = batch.map(record => {
-                // 确保 create 中包含所有必填字段
-                // 显式地从 record 中提取字段，确保 TypeScript 不会遗漏
                 const { symbol, date, open, high, low, close } = record;
                 
-                // 确保数值字段不为 NaN 或 undefined
-                // if (isNaN(open) || isNaN(high) || isNaN(low) || isNaN(close)) {
-                //     console.error('Invalid record found:', record);
-                //     throw new Error('Invalid numeric value in record');
-                // }
-
                 return prisma.exchangeRate.upsert({
                     where: {
                         symbol_date: {

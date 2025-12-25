@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>汇率分析可视化</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .chart-container {
+            position: relative;
+            height: 500px;
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>USD/CNY 汇率分析</h1>
+        
+        <div class="chart-container">
+            <canvas id="priceChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="macdChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                const response = await fetch('analysis_results.json');
+                const data = await response.json();
+                renderCharts(data);
+            } catch (error) {
+                console.error('Error loading data:', error);
+                alert('加载数据失败，请确保 analysis_results.json 存在。');
+            }
+        }
+
+        function renderCharts(data) {
+            const ctxPrice = document.getElementById('priceChart').getContext('2d');
+            const ctxMacd = document.getElementById('macdChart').getContext('2d');
+
+            // 主图表：价格 + SMA + EMA + Bollinger
+            new Chart(ctxPrice, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [
+                        {
+                            label: '收盘价',
+                            data: data.prices,
+                            borderColor: '#333',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'SMA(20)',
+                            data: data.indicators.sma20,
+                            borderColor: '#2196F3',
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            borderDash: [5, 5]
+                        },
+                        {
+                            label: 'EMA(20)',
+                            data: data.indicators.ema20,
+                            borderColor: '#4CAF50',
+                            borderWidth: 1.5,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Bollinger Upper',
+                            data: data.indicators.bollinger.upper,
+                            borderColor: 'rgba(255, 152, 0, 0.5)',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        {
+                            label: 'Bollinger Lower',
+                            data: data.indicators.bollinger.lower,
+                            borderColor: 'rgba(255, 152, 0, 0.5)',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            fill: '-1' // Fill to the previous dataset (Upper)
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '价格趋势与均线指标'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toFixed(4);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '汇率'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // MACD 图表
+            new Chart(ctxMacd, {
+                type: 'bar',
+                data: {
+                    labels: data.dates,
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'MACD Line',
+                            data: data.indicators.macd.line,
+                            borderColor: '#2196F3',
+                            borderWidth: 2,
+                            pointRadius: 0
+                        },
+                        {
+                            type: 'line',
+                            label: 'Signal Line',
+                            data: data.indicators.macd.signal,
+                            borderColor: '#FF5722',
+                            borderWidth: 2,
+                            pointRadius: 0
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Histogram',
+                            data: data.indicators.macd.histogram,
+                            backgroundColor: (context) => {
+                                const value = context.raw;
+                                return value >= 0 ? '#4CAF50' : '#F44336';
+                            }
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'MACD (12, 26, 9)'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: '数值'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

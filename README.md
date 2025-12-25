@@ -61,6 +61,12 @@ npm run init-db
 npm run analyze
 ```
 
+### 8. 可视化分析结果
+启动本地 Web 服务器，查看交互式图表：
+```bash
+npm run visualize
+```
+
 ## 常用命令
 
 | 命令 | 说明 |
@@ -68,6 +74,7 @@ npm run analyze
 | `npm run fetch-data` | 获取最新汇率数据 |
 | `npm run init-db` | 初始化并导入数据到数据库 |
 | `npm run analyze` | 运行技术分析脚本 |
+| `npm run visualize` | 运行分析并打开可视化页面 |
 | `npm run db:studio` | 打开 Prisma Studio 可视化管理数据库 |
 | `npm run db:push` | 同步数据库 Schema 变更 |
 

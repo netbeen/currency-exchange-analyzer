@@ -1,5 +1,5 @@
-import { PrismaClient } from '../generated/client/client';
-import { PrismaLibSql } from '@prisma/adapter-libsql';
+import { prisma } from '../utils/db';
+import { ANALYSIS_RESULT_FILE } from '../utils/config';
 import { 
     calculateSMA, 
     calculateEMA, 
@@ -9,20 +9,9 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 
-// 加载环境变量
-const envPath = path.resolve(__dirname, '../../.env');
-if (fs.existsSync(envPath)) {
-    require('dotenv').config({ path: envPath });
-}
-
 async function main() {
     console.log('正在连接数据库...');
     
-    const adapter = new PrismaLibSql({
-        url: process.env.DATABASE_URL!,
-    });
-    const prisma = new PrismaClient({ adapter });
-
     try {
         console.log('获取历史数据...');
         const rates = await prisma.exchangeRate.findMany({
@@ -42,8 +31,8 @@ async function main() {
             return;
         }
 
-        const closePrices = rates.map(r => r.close);
-        const dates = rates.map(r => r.date);
+        const closePrices = rates.map((r: { close: number }) => r.close);
+        const dates = rates.map((r: { date: Date }) => r.date);
 
         console.log('正在计算技术指标 (SMA, EMA, Bollinger Bands, MACD)...');
         
@@ -52,6 +41,34 @@ async function main() {
         const ema20 = calculateEMA(closePrices, period);
         const bollinger = calculateBollingerBands(closePrices, 20, 2);
         const macd = calculateMACD(closePrices, 12, 26, 9);
+
+        // 保存分析结果到 JSON 文件
+        const outputDir = path.dirname(ANALYSIS_RESULT_FILE);
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+        
+        const resultData = {
+            dates: dates.map((d: Date) => d.toISOString().split('T')[0]),
+            prices: closePrices,
+            indicators: {
+                sma20,
+                ema20,
+                bollinger: {
+                    upper: bollinger.upper,
+                    middle: bollinger.middle,
+                    lower: bollinger.lower
+                },
+                macd: {
+                    line: macd.macdLine,
+                    signal: macd.signalLine,
+                    histogram: macd.histogram
+                }
+            }
+        };
+
+        fs.writeFileSync(ANALYSIS_RESULT_FILE, JSON.stringify(resultData, null, 2));
+        console.log(`\n分析结果已保存至: ${ANALYSIS_RESULT_FILE}`);
 
         console.log(`\n=== 最近 5 个交易日的分析结果 ===`);
         
