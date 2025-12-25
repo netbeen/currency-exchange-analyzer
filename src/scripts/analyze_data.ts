@@ -57,9 +57,16 @@ async function main() {
 
         console.log('正在计算技术指标 (SMA, EMA, Bollinger Bands, MACD)...');
         
-        const period = 20;
-        const sma20 = calculateSMA(closePrices, period);
-        const ema20 = calculateEMA(closePrices, period);
+        // 短期
+        const sma20 = calculateSMA(closePrices, 20);
+        const ema20 = calculateEMA(closePrices, 20);
+        
+        // 长期 (针对长期投资者)
+        const sma50 = calculateSMA(closePrices, 50);
+        const sma200 = calculateSMA(closePrices, 200);
+        const ema50 = calculateEMA(closePrices, 50);
+        const ema200 = calculateEMA(closePrices, 200);
+
         const bollinger = calculateBollingerBands(closePrices, 20, 2);
         const macd = calculateMACD(closePrices, 12, 26, 9);
 
@@ -76,6 +83,10 @@ async function main() {
             indicators: {
                 sma20,
                 ema20,
+                sma50,
+                sma200,
+                ema50,
+                ema200,
                 bollinger: {
                     upper: bollinger.upper,
                     middle: bollinger.middle,
@@ -102,6 +113,8 @@ async function main() {
             
             const sma = sma20[i] ? sma20[i]?.toFixed(4) : 'N/A';
             const ema = ema20[i] ? ema20[i]?.toFixed(4) : 'N/A';
+            const sma50Val = sma50[i] ? sma50[i]?.toFixed(4) : 'N/A';
+            const sma200Val = sma200[i] ? sma200[i]?.toFixed(4) : 'N/A';
             
             const upper = bollinger.upper[i] ? bollinger.upper[i]?.toFixed(4) : 'N/A';
             const middle = bollinger.middle[i] ? bollinger.middle[i]?.toFixed(4) : 'N/A';
@@ -113,6 +126,7 @@ async function main() {
             
             console.log(`\n日期: ${dateStr} | 收盘价: ${close}`);
             console.log(`  SMA(20): ${sma} | EMA(20): ${ema}`);
+            console.log(`  SMA(50): ${sma50Val} | SMA(200): ${sma200Val}`);
             console.log(`  Bollinger(20,2): Upper=${upper} Middle=${middle} Lower=${lower}`);
             console.log(`  MACD(12,26,9): Line=${macdLine} Signal=${signalLine} Hist=${histogram}`);
         }

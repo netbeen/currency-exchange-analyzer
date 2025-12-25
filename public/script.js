@@ -228,19 +228,36 @@ function renderCharts(data) {
                     yAxisID: 'y'
                 },
                 {
-                    label: 'SMA(20)',
-                    data: data.indicators.sma20,
+                    label: 'SMA(50) 中期',
+                    data: data.indicators.sma50,
                     borderColor: '#2196F3',
                     borderWidth: 1.5,
                     pointRadius: 0,
                     borderDash: [5, 5]
                 },
                 {
-                    label: 'EMA(20)',
-                    data: data.indicators.ema20,
-                    borderColor: '#4CAF50',
-                    borderWidth: 1.5,
+                    label: 'SMA(200) 长期',
+                    data: data.indicators.sma200,
+                    borderColor: '#E91E63', // 红色，醒目
+                    borderWidth: 2,
                     pointRadius: 0
+                },
+                {
+                    label: 'EMA(50)',
+                    data: data.indicators.ema50,
+                    borderColor: '#4CAF50', // 绿色
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    borderDash: [2, 2],
+                    hidden: true // 默认隐藏，避免太乱
+                },
+                {
+                    label: 'EMA(200)',
+                    data: data.indicators.ema200,
+                    borderColor: '#FF9800', // 橙色
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    borderDash: [2, 2]
                 },
                 {
                     label: 'Bollinger Upper',
