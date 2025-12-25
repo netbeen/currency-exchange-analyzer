@@ -1,0 +1,46 @@
+{
+  "name": "currency-exchange-analyzer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "fetch-data": "ts-node src/scripts/fetch_data.ts",
+    "init-db": "ts-node src/scripts/init_db.ts",
+    "analyze": "ts-node src/scripts/analyze_data.ts",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/netbeen/currency-exchange-analyzer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/netbeen/currency-exchange-analyzer/issues"
+  },
+  "homepage": "https://github.com/netbeen/currency-exchange-analyzer#readme",
+  "dependencies": {
+    "@libsql/client": "^0.15.15",
+    "@prisma/adapter-libsql": "^7.2.0",
+    "@prisma/client": "^7.2.0",
+    "@types/axios": "^0.9.36",
+    "@types/node": "^25.0.3",
+    "axios": "^1.13.2",
+    "mathjs": "^15.1.0",
+    "node-cron": "^4.2.1",
+    "puppeteer": "^24.34.0",
+    "sqlite3": "^5.1.7",
+    "yahoo-finance2": "^3.10.2"
+  },
+  "devDependencies": {
+    "@types/sqlite3": "^3.1.11",
+    "prisma": "^7.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

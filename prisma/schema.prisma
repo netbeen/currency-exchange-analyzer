@@ -1,0 +1,27 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider   = "prisma-client"
+  output     = "../src/generated/client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model ExchangeRate {
+  id        Int      @id @default(autoincrement())
+  symbol    String   // 货币对代码，如 "USDCNY"
+  date      DateTime // 交易日期
+  open      Float    // 开盘价
+  high      Float    // 最高价
+  low       Float    // 最低价
+  close     Float    // 收盘价
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 复合唯一索引：确保同一货币对在同一天只有一条记录
+  @@unique([symbol, date])
+  @@map("exchange_rates")
+}
